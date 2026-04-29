@@ -10,7 +10,9 @@ public class DataBase : MonoBehaviour
 
 public class ItemData
 {
+    public int stack;
     public int id;
     public string name;
     public Sprite image;
+    
 }

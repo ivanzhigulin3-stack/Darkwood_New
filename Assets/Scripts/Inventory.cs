@@ -33,7 +33,7 @@ public class Inventory : MonoBehaviour
 
         for (int i = 0; i < maxCount; i++)  // тест, заполнить Rand ячейки
         {
-            AddItem(i, data.item[Random.Range(0, data.item.Count)], Random.Range(1,20));
+            AddItem(i, data.item[Random.Range(0, data.item.Count)], Random.Range(1,5));
         }
         UpdateInventory();
     }
@@ -58,7 +58,8 @@ public class Inventory : MonoBehaviour
         }
     }
 
-    public void SearchForSameItem(ItemData ItemData, int count)
+    /*
+   public void SearchForSameItem(ItemData ItemData, int count)
     {
         for (int i = 0; i < maxCount; i++)
         {
@@ -71,7 +72,7 @@ public class Inventory : MonoBehaviour
                     if (item[i].count > 99)
                     {
                         count = item[i].count - 99;
-                        item[i].count = 20;
+                        item[i].count = 99;
                     }
                     else
                     {
@@ -94,6 +95,7 @@ public class Inventory : MonoBehaviour
             }
         }
     }
+   */
 
     public void AddItem(int id, ItemData ItemData, int count)
     {
@@ -200,14 +202,14 @@ public class Inventory : MonoBehaviour
             }
             else
             {
-                if (II.count + currentItem.count <= 99)
+                if (II.count + currentItem.count <= data.item[II.id].stack)
                 {
                     II.count += currentItem.count;
                 }
                 else
                 {
-                    AddItem(currentID, data.item[II.id], II.count + currentItem.count - 99);
-                    II.count = 99;
+                    AddItem(currentID, data.item[II.id], II.count + currentItem.count - data.item[II.id].stack);
+                    II.count = data.item[II.id].stack;
                 }
 
                 II.itemGameObj.GetComponentInChildren<Text>().text = II.count.ToString();
@@ -234,6 +236,55 @@ public class Inventory : MonoBehaviour
         New.count = old.count;
 
         return New;
+    }
+
+
+    //Добавлен для поднятия предметов с пола
+    public bool AddItemByID(int itemID, int count)
+    {
+        if (itemID == 0 || count <= 0) return false;
+        
+        ItemData itemToAdd = data.item[itemID];
+        int remainingCount = count;
+
+        for (int i = 0; i < maxCount; i++)
+        {
+            if (item[i].id == itemID)
+            {
+                int maxStack = itemToAdd.stack;
+                int currentCount = item[i].count;
+
+                if (currentCount < maxStack)
+                {
+                    int spaceLeft = maxStack - currentCount;
+                    int toAdd = Mathf.Min(remainingCount, spaceLeft);
+
+                    item[i].count += toAdd;
+                    remainingCount -= toAdd;
+                    UpdateInventory();
+
+                    if (remainingCount <= 0) return true;
+                }
+            }
+        }
+
+        for (int i = 0; i < maxCount; i++)
+        {
+            if (item[i].id == 0)
+            {
+                int maxStack = itemToAdd.stack;
+                int toAdd = Mathf.Min(remainingCount, maxStack);
+
+                AddItem(i, itemToAdd, toAdd);
+                remainingCount -= toAdd;
+
+                if (remainingCount <= 0) return true;
+            }
+        }
+
+        Debug.Log($"Недостаточно места для {itemToAdd.name} x{remainingCount}");
+        //****
+        return false;
     }
 
 }
