@@ -240,7 +240,7 @@ public class Inventory : MonoBehaviour
 
 
     //Добавлен для поднятия предметов с пола
-    public bool AddItemByID(int itemID, int count)
+    /*public bool AddItemByID(int itemID, int count)
     {
         if (itemID == 0 || count <= 0) return false;
         
@@ -284,6 +284,45 @@ public class Inventory : MonoBehaviour
 
         Debug.Log($"Недостаточно места для {itemToAdd.name} x{remainingCount}");
         //****
+        return false;
+    }
+    */
+
+    public bool AddItemByID(int itemID, int count)
+    {
+        ItemData itemToAdd = data.item[itemID];
+        int remainingCount = count;
+
+        // Сначала пытаемся добавить в существующие стеки
+        for (int i = 0; i < maxCount; i++)
+        {
+            if (item[i].id == itemID && item[i].count < itemToAdd.stack)
+            {
+                int spaceLeft = itemToAdd.stack - item[i].count;
+                int toAdd = Mathf.Min(remainingCount, spaceLeft);
+                item[i].count += toAdd;
+                remainingCount -= toAdd;
+                UpdateInventory();
+
+                if (remainingCount <= 0)
+                    return true;
+            }
+        }
+
+        // Затем ищем пустые слоты
+        for (int i = 0; i < maxCount; i++)
+        {
+            if (item[i].id == 0)
+            {
+                int toAdd = Mathf.Min(remainingCount, itemToAdd.stack);
+                AddItem(i, itemToAdd, toAdd);
+                remainingCount -= toAdd;
+
+                if (remainingCount <= 0)
+                    return true;
+            }
+        }
+
         return false;
     }
 
