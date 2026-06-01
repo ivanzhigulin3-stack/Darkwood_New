@@ -4,11 +4,11 @@ public class PlayerCombat : MonoBehaviour
 {
     public int weaponDamage = 25;
     public float attackRange = 2f;
-    public LayerMask enemyLayers; // В инспекторе выбери слой "Enemy"
+    public LayerMask enemyLayers; 
 
     void Update()
     {
-        if (Input.GetMouseButtonDown(0)) // Левая кнопка мыши
+        if (Input.GetMouseButtonDown(0)) 
         {
             Attack();
         }
@@ -16,7 +16,6 @@ public class PlayerCombat : MonoBehaviour
 
     void Attack()
     {
-        // Эмуляция удара (Raycast или OverlapSphere)
         RaycastHit hit;
         if (Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hit, attackRange, enemyLayers))
         {
@@ -25,7 +24,7 @@ public class PlayerCombat : MonoBehaviour
             {
                 enemyHealth.TakeDamage(weaponDamage);
                 Debug.Log("Попал по врагу!");
-                // Добавь звук, эффект крови, отбрасывание
+               
             }
         }
     }

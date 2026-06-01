@@ -2,7 +2,40 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.EventSystems;
+using System;
 
+[Serializable]
+public class InventorySaveData
+{
+    public List<InventorySlotData> slots = new List<InventorySlotData>();
+
+    public InventorySaveData(int count)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            slots.Add(new InventorySlotData());
+        }
+    }
+}
+
+[Serializable]
+public class InventorySlotData
+{
+    public int id;
+    public int count;
+
+    public InventorySlotData()
+    {
+        id = 0;
+        count = 0;
+    }
+
+    public InventorySlotData(int itemId, int itemCount)
+    {
+        id = itemId;
+        count = itemCount;
+    }
+}
 public class Inventory : MonoBehaviour
 {
     public DataBase data;
@@ -31,22 +64,26 @@ public class Inventory : MonoBehaviour
             AddGraphics();
         }
 
+        LoadInventory();
+
+        AddTestItems();
+        /*
         for (int i = 0; i < maxCount; i++)  // тест, заполнить Rand ячейки
         {
             AddItem(i, data.item[Random.Range(0, data.item.Count)], Random.Range(1,5));
         }
         UpdateInventory();
+        */
     }
+
+    private bool isInventoryDirty = true;
     public void Update()
     {
         if (currentID != -1)
         {
             MoveObject();
         }
-        else
-        {
-            UpdateInventory();
-        }
+        
 
         if (Input.GetKeyDown(KeyCode.I))
         {
@@ -54,49 +91,87 @@ public class Inventory : MonoBehaviour
             if (backGround.activeSelf)
             {
                 UpdateInventory();
+                isInventoryDirty = false;
             }
+        }
+
+        if (backGround.activeSelf && isInventoryDirty)
+        {
+            UpdateInventory();
+            isInventoryDirty = false;
+        }
+
+        if (Input.GetKeyDown(KeyCode.F5))
+        {
+            SaveInventory();
+            Debug.Log("Инвентарь сохранен (F5)");
+        }
+
+        // Быстрая загрузка по F9
+        if (Input.GetKeyDown(KeyCode.F9))
+        {
+            LoadInventory();
+            Debug.Log("Инвентарь загружен (F9)");
         }
     }
 
-    /*
-   public void SearchForSameItem(ItemData ItemData, int count)
+
+
+
+    public void AddItem(int id, ItemData ItemData, int count)
     {
-        for (int i = 0; i < maxCount; i++)
+        // Проверяем границы массива
+        if (id < 0 || id >= maxCount)
         {
-            if (item[i].id == ItemData.id)
-            {
-                if (item[0].count < 99)
-                {
-                    item[i].count += count;
-                    
-                    if (item[i].count > 99)
-                    {
-                        count = item[i].count - 99;
-                        item[i].count = 99;
-                    }
-                    else
-                    {
-                        count = 0;
-                        i = maxCount;
-                    }
-                }
-            }
+            Debug.LogError($"Попытка добавить предмет в несуществующий слот {id}");
+            return;
         }
 
-        if (count > 0)
+        if (id >= item.Count)
         {
-            for (int i = 0; i < maxCount; i++)
-            {
-                if (item[i].id == 0)
-                {
-                    AddItem(i, ItemData, count);
-                    i = maxCount;
-                }
-            }
+            Debug.LogError($"Слот {id} не существует в списке item!");
+            return;
         }
+
+        if (item[id] == null)
+        {
+            Debug.LogError($"item[{id}] равен null!");
+            return;
+        }
+
+        if (ItemData == null)
+        {
+            Debug.LogError("ItemData равен null!");
+            return;
+        }
+
+        // Проверяем, что UI элементы существуют
+        Image image = item[id].itemGameObj.GetComponent<Image>();
+        if (image == null)
+        {
+            Debug.LogError($"У item[{id}] нет компонента Image!");
+            return;
+        }
+
+        Text text = item[id].itemGameObj.GetComponentInChildren<Text>();
+
+        // Выполняем добавление
+        item[id].id = ItemData.id;
+        item[id].count = count;
+        image.sprite = ItemData.image;
+
+        if (count > 1 && ItemData.id != 0 && text != null)
+        {
+            text.text = count.ToString();
+        }
+        else if (text != null)
+        {
+            text.text = "";
+        }
+
+        isInventoryDirty = true;
     }
-   */
-
+    /*
     public void AddItem(int id, ItemData ItemData, int count)
     {
         item[id].id = ItemData.id;
@@ -111,10 +186,12 @@ public class Inventory : MonoBehaviour
         {
             item[id].itemGameObj.GetComponentInChildren<Text>().text = "";
         }
+
+        isInventoryDirty = true;  
     }
+    */
 
-
-    public void AddInventoryItem(int id, InventoryItem invItem )
+    public void AddInventoryItem(int id, InventoryItem invItem)
     {
         item[id].id = invItem.id;
         item[id].count = invItem.count;
@@ -129,7 +206,7 @@ public class Inventory : MonoBehaviour
             item[id].itemGameObj.GetComponentInChildren<Text>().text = "";
         }
 
-        
+        isInventoryDirty = true;
     }
 
     public void AddGraphics()
@@ -156,6 +233,61 @@ public class Inventory : MonoBehaviour
         }
     }
 
+
+    public void UpdateInventory()
+    {
+        if (data == null || data.item == null)
+        {
+            Debug.LogError("База данных не инициализирована!");
+            return;
+        }
+
+        for (int i = 0; i < maxCount; i++)
+        {
+            if (i >= item.Count)
+            {
+                Debug.LogError($"Индекс {i} выходит за границы списка item (размер: {item.Count})");
+                break;
+            }
+
+            if (item[i] == null)
+            {
+                Debug.LogError($"item[{i}] равен null!");
+                continue;
+            }
+
+            int itemId = item[i].id;
+
+            // Проверяем, что ID корректен
+            if (itemId < 0 || itemId >= data.item.Count)
+            {
+                Debug.LogWarning($"Некорректный ID предмета: {itemId} в слоте {i}");
+                // Очищаем поврежденный слот
+                item[i].id = 0;
+                item[i].count = 0;
+                itemId = 0;
+            }
+
+            // Обновляем текст
+            Text countText = item[i].itemGameObj.GetComponentInChildren<Text>();
+            if (countText != null)
+            {
+                if (item[i].id != 0 && item[i].count > 1)
+                    countText.text = item[i].count.ToString();
+                else
+                    countText.text = "";
+            }
+
+            // Обновляем иконку
+            Image icon = item[i].itemGameObj.GetComponent<Image>();
+            if (icon != null && GetSafeItem(itemId) != null)
+            {
+                icon.sprite = GetSafeItem(itemId).image;
+            }
+        }
+    }
+
+    /*
     public void UpdateInventory()
     {
         for (int i = 0; i < maxCount; i++)
@@ -172,9 +304,9 @@ public class Inventory : MonoBehaviour
             item[i].itemGameObj.GetComponent<Image>().sprite = data.item[item[i].id].image;
         }
     }
+    */
     public void SelectObject()
     {
-
         int selectedSlotID = int.Parse(es.currentSelectedGameObject.name);
 
         if (item[selectedSlotID].id == 0 && currentID == -1)
@@ -205,6 +337,7 @@ public class Inventory : MonoBehaviour
                 if (II.count + currentItem.count <= data.item[II.id].stack)
                 {
                     II.count += currentItem.count;
+                    isInventoryDirty = true;  // Помечаем изменение
                 }
                 else
                 {
@@ -215,7 +348,6 @@ public class Inventory : MonoBehaviour
                 II.itemGameObj.GetComponentInChildren<Text>().text = II.count.ToString();
             }
             currentID = -1;
-
             movingObject.gameObject.SetActive(false);
         }
     }
@@ -240,60 +372,13 @@ public class Inventory : MonoBehaviour
 
 
     //Добавлен для поднятия предметов с пола
-    /*public bool AddItemByID(int itemID, int count)
-    {
-        if (itemID == 0 || count <= 0) return false;
-        
-        ItemData itemToAdd = data.item[itemID];
-        int remainingCount = count;
 
-        for (int i = 0; i < maxCount; i++)
-        {
-            if (item[i].id == itemID)
-            {
-                int maxStack = itemToAdd.stack;
-                int currentCount = item[i].count;
-
-                if (currentCount < maxStack)
-                {
-                    int spaceLeft = maxStack - currentCount;
-                    int toAdd = Mathf.Min(remainingCount, spaceLeft);
-
-                    item[i].count += toAdd;
-                    remainingCount -= toAdd;
-                    UpdateInventory();
-
-                    if (remainingCount <= 0) return true;
-                }
-            }
-        }
-
-        for (int i = 0; i < maxCount; i++)
-        {
-            if (item[i].id == 0)
-            {
-                int maxStack = itemToAdd.stack;
-                int toAdd = Mathf.Min(remainingCount, maxStack);
-
-                AddItem(i, itemToAdd, toAdd);
-                remainingCount -= toAdd;
-
-                if (remainingCount <= 0) return true;
-            }
-        }
-
-        Debug.Log($"Недостаточно места для {itemToAdd.name} x{remainingCount}");
-        //****
-        return false;
-    }
-    */
 
     public bool AddItemByID(int itemID, int count)
     {
         ItemData itemToAdd = data.item[itemID];
         int remainingCount = count;
 
-        // Сначала пытаемся добавить в существующие стеки
         for (int i = 0; i < maxCount; i++)
         {
             if (item[i].id == itemID && item[i].count < itemToAdd.stack)
@@ -302,14 +387,13 @@ public class Inventory : MonoBehaviour
                 int toAdd = Mathf.Min(remainingCount, spaceLeft);
                 item[i].count += toAdd;
                 remainingCount -= toAdd;
-                UpdateInventory();
+                isInventoryDirty = true;
 
                 if (remainingCount <= 0)
                     return true;
             }
         }
 
-        // Затем ищем пустые слоты
         for (int i = 0; i < maxCount; i++)
         {
             if (item[i].id == 0)
@@ -325,7 +409,150 @@ public class Inventory : MonoBehaviour
 
         return false;
     }
+    //проверка на ID
+    private ItemData GetSafeItem(int id)
+    {
+        if (data == null)
+        {
+            Debug.LogError("DataBase не назначен в инспекторе!");
+            return null;
+        }
 
+        if (id < 0 || id >= data.item.Count)
+        {
+            Debug.LogWarning($"Попытка получить предмет с ID {id}, но его нет в базе!");
+            return data.item[0]; 
+        }
+
+        return data.item[id];
+    }
+
+    //new-------------------------------
+
+    private const string SAVE_KEY = "InventoryData";  // Ключ для сохранения
+
+    // Сохранение инвентаря
+    public void SaveInventory()
+    {
+        try
+        {
+            InventorySaveData saveData = new InventorySaveData(maxCount);
+
+            for (int i = 0; i < maxCount && i < item.Count; i++)
+            {
+                if (item[i] != null)
+                {
+                    saveData.slots[i].id = item[i].id;
+                    saveData.slots[i].count = item[i].count;
+                }
+            }
+
+            string json = JsonUtility.ToJson(saveData);
+            PlayerPrefs.SetString(SAVE_KEY, json);
+            PlayerPrefs.Save();  // Немедленно сохраняем
+            Debug.Log("Инвентарь сохранен!");
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Ошибка сохранения инвентаря: {e.Message}");
+        }
+    }
+
+    // Загрузка инвентаря
+    public void LoadInventory()
+    {
+        try
+        {
+            if (PlayerPrefs.HasKey(SAVE_KEY))
+            {
+                string json = PlayerPrefs.GetString(SAVE_KEY);
+                InventorySaveData saveData = JsonUtility.FromJson<InventorySaveData>(json);
+
+                if (saveData != null && saveData.slots.Count == maxCount)
+                {
+                    for (int i = 0; i < maxCount; i++)
+                    {
+                        if (saveData.slots[i].id != 0)
+                        {
+                            ItemData itemData = GetSafeItem(saveData.slots[i].id);
+                            if (itemData != null)
+                            {
+                                AddItem(i, itemData, saveData.slots[i].count);
+                            }
+                        }
+                        else
+                        {
+                            AddItem(i, data.item[0], 0);  // Пустой слот
+                        }
+                    }
+
+                    Debug.Log("Инвентарь загружен!");
+                    UpdateInventory();
+                }
+                else
+                {
+                    Debug.LogWarning("Сохраненные данные повреждены или несовместимы");
+                }
+            }
+            else
+            {
+                Debug.Log("Нет сохраненного инвентаря, создаем новый");
+                CreateEmptyInventory();
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"Ошибка загрузки инвентаря: {e.Message}");
+            CreateEmptyInventory();
+        }
+    }
+
+    // Создание пустого инвентаря
+    private void CreateEmptyInventory()
+    {
+        for (int i = 0; i < maxCount; i++)
+        {
+            AddItem(i, data.item[0], 0);
+        }
+        UpdateInventory();
+    }
+
+    // Очистка всех сохранений (для тестирования)
+    public void DeleteSave()
+    {
+        PlayerPrefs.DeleteKey(SAVE_KEY);
+        PlayerPrefs.Save();
+        Debug.Log("Сохранение удалено");
+        CreateEmptyInventory();
+    }
+
+    // Сохраняем при закрытии игры
+    private void OnApplicationQuit()
+    {
+        SaveInventory();
+    }
+
+    private void OnApplicationPause(bool pauseStatus)
+    {
+        if (pauseStatus)
+        {
+            SaveInventory();
+        }
+    }
+
+    public void AddTestItems()
+    {
+        // Очищаем инвентарь
+        for (int i = 0; i < maxCount; i++)
+        {
+            AddItem(i, data.item[0], 0);
+        }
+
+        // Добавляем тестовые предметы
+        AddItemByID(1, 5); 
+        AddItemByID(2, 10);  
+        AddItemByID(3, 30);  
+    }
 }
 
 [System.Serializable]
@@ -336,3 +563,13 @@ public class InventoryItem
 
     public int count;
 }
+//вызов из другого скрипта
+/*
+ // Найти инвентарь и сохранить
+Inventory inv = FindObjectOfType<Inventory>();
+if (inv != null)
+    inv.SaveInventory();
+
+// Загрузить инвентарь при старте уровня
+inv.LoadInventory();
+ */

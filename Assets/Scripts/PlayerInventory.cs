@@ -1,17 +1,18 @@
+﻿using System;
+using UnityEngine.EventSystems;
 using UnityEngine;
+using Unity.VisualScripting;
 
-public class Container : BaseCase
+public class PlayerInventory : BaseCase
 {
-   
     public void Start()
     {
         if (item.Count == 0)
         {
             AddGraphics();
+
             AddTestItems();
         }
-       
-
     }
 
     public void Update()
@@ -40,7 +41,7 @@ public class Container : BaseCase
             caseUpdate = false;
         }
 
-
+        
     }
 
     public void AddTestItems()
@@ -49,9 +50,9 @@ public class Container : BaseCase
         {
             AddItem(i, data.item[0], 0);
         }
-        AddItemByID(1, 23);
-        AddItemByID(2, Random.Range(3,35));
-        AddItemByID(3, 4);
+        AddItemByID(1, 5);
+        AddItemByID(2, 10);
+        AddItemByID(3, 30);
     }
 
     public bool AddItemByID(int itemID, int count)

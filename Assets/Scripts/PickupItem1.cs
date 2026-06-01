@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PickUpItem : MonoBehaviour
+public class PickUpItem1 : MonoBehaviour
 {
     public int itemID;
     public int amount;
@@ -8,9 +8,14 @@ public class PickUpItem : MonoBehaviour
 
 
     private Transform player;
-    private PlayerInventory playerInventory;
+    private Inventory PlayerInventory;
     private bool playerInRange = false;
     private GameObject currentPlayer;
+
+    public GameObject pickupEffect;
+    public float floatSpeed = 1f;
+    public float floatHeight = 0.2f;
+    public float rotationSpeed = 90f;
 
     private Vector3 startPosition;
     private float floatTimer = 0f;
@@ -28,9 +33,9 @@ public class PickUpItem : MonoBehaviour
         CreatePickupHint();
     }
 
-    private void Update() 
+    private void Update()
     {
-       
+        FloatAndRotate();
 
         if (playerInRange && Input.GetKeyDown(pickupKey))
         {
@@ -43,13 +48,13 @@ public class PickUpItem : MonoBehaviour
         }
     }
 
-    private void OnTriggerEnter2D(Collider2D other) 
+    private void OnTriggerEnter2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
             playerInRange = true;
             currentPlayer = other.gameObject;
-            playerInventory = currentPlayer.GetComponent<PlayerInventory>();
+            PlayerInventory = currentPlayer.GetComponent<Inventory>();
 
             ShowPickupHint(true);
 
@@ -57,13 +62,13 @@ public class PickUpItem : MonoBehaviour
         }
     }
 
-    private void OnTriggerExit2D(Collider2D other) 
+    private void OnTriggerExit2D(Collider2D other)
     {
         if (other.CompareTag("Player"))
         {
             playerInRange = false;
             currentPlayer = null;
-            playerInventory = null;
+            PlayerInventory = null;
 
             ShowPickupHint(false);
 
@@ -71,7 +76,7 @@ public class PickUpItem : MonoBehaviour
         }
     }
 
-    private void ShowPickupHint(bool show) 
+    private void ShowPickupHint(bool show)
     {
         if (pickupHint != null)
         {
@@ -85,7 +90,7 @@ public class PickUpItem : MonoBehaviour
         }
     }
 
-    private void EnableGlowEffect(bool enable) 
+    private void EnableGlowEffect(bool enable)
     {
         SpriteRenderer renderer = GetComponent<SpriteRenderer>();
         if (renderer != null)
@@ -93,7 +98,7 @@ public class PickUpItem : MonoBehaviour
             if (enable)
             {
                 renderer.material.SetFloat("_Glow", 0.5f);
-                
+
                 renderer.color = new Color(1f, 1f, 1f, 1f);
             }
             else
@@ -103,19 +108,28 @@ public class PickUpItem : MonoBehaviour
             }
         }
     }
-    
+
+
+    private void FloatAndRotate()
+    {
+        floatTimer += Time.deltaTime * floatSpeed;
+        float newY = startPosition.y + Mathf.Sin(floatTimer) * floatHeight;
+        transform.position = new Vector3(startPosition.x, newY, startPosition.z);
+
+        transform.Rotate(0, 0, rotationSpeed * Time.deltaTime);
+    }
 
     private bool HasFreeSpace()
     {
-        if (playerInventory == null) return false;
+        if (PlayerInventory == null) return false;
 
-        for (int i = 0; i < playerInventory.maxCount; i++)
+        for (int i = 0; i < PlayerInventory.maxCount; i++)
         {
-            if (playerInventory.item[i].id == itemID &&
-                playerInventory.item[i].count < playerInventory.data.item[itemID].stack)
+            if (PlayerInventory.item[i].id == itemID &&
+                PlayerInventory.item[i].count < PlayerInventory.data.item[itemID].stack)
                 return true;
-          
-            if (playerInventory.item[i].id == 0) return true;
+
+            if (PlayerInventory.item[i].id == 0) return true;
         }
 
         return false;
@@ -125,39 +139,39 @@ public class PickUpItem : MonoBehaviour
     {
         int remainingAmount = amount;
 
-        for (int i = 0; i < playerInventory.maxCount; i++)
+        for (int i = 0; i < PlayerInventory.maxCount; i++)
         {
-            if (playerInventory.item[i].id == itemID)
+            if (PlayerInventory.item[i].id == itemID)
             {
-                int maxStack = playerInventory.data.item[itemID].stack;
-                int currentCount = playerInventory.item[i].count;
+                int maxStack = PlayerInventory.data.item[itemID].stack;
+                int currentCount = PlayerInventory.item[i].count;
 
                 if (currentCount < maxStack)
                 {
                     int SpaceLeft = maxStack - currentCount;
                     int toAdd = Mathf.Min(remainingAmount, SpaceLeft);
 
-                    playerInventory.item[i].count += toAdd;
+                    PlayerInventory.item[i].count += toAdd;
                     remainingAmount -= toAdd;
-                    playerInventory.CaseUpdate();
+                    PlayerInventory.UpdateInventory();
 
                     if (remainingAmount <= 0)
                     {
                         OnPickupSuccess();
                         return;
-                    } 
+                    }
                 }
             }
         }
 
-        for (int i = 0; i < playerInventory.maxCount; i++)
+        for (int i = 0; i < PlayerInventory.maxCount; i++)
         {
-            if (playerInventory.item[i].id == 0)
+            if (PlayerInventory.item[i].id == 0)
             {
-                int maxStack = playerInventory.data.item[itemID].stack;
+                int maxStack = PlayerInventory.data.item[itemID].stack;
                 int toAdd = Mathf.Min(remainingAmount, maxStack);
 
-                playerInventory.AddItem(i, playerInventory.data.item[itemID], toAdd);
+                PlayerInventory.AddItem(i, PlayerInventory.data.item[itemID], toAdd);
                 remainingAmount -= toAdd;
 
                 if (remainingAmount <= 0)
@@ -175,7 +189,10 @@ public class PickUpItem : MonoBehaviour
     {
         Debug.Log($"Подобран {GetItemName()} x{amount}");
         //**
-        
+        if (pickupEffect != null)
+        {
+            Instantiate(pickupEffect, transform.position, Quaternion.identity);
+        }
         Destroy(gameObject);
     }
     private void CreatePickupHint()
@@ -187,14 +204,14 @@ public class PickUpItem : MonoBehaviour
 
     private void TryPickup()
     {
-        if (playerInventory == null)
+        if (PlayerInventory == null)
         {
             Debug.LogError("Inventory component not found on player!");
             //**
             return;
         }
 
-        if (HasFreeSpace()) 
+        if (HasFreeSpace())
         {
             AddToInventory();
         }
@@ -207,9 +224,9 @@ public class PickUpItem : MonoBehaviour
 
     private string GetItemName()
     {
-        if (playerInventory != null && playerInventory.data != null)
+        if (PlayerInventory != null && PlayerInventory.data != null)
         {
-            return playerInventory.data.item[itemID].name;
+            return PlayerInventory.data.item[itemID].name;
         }
 
         return "Предмет";

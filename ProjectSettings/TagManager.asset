@@ -7,6 +7,7 @@ TagManager:
   - Wall
   - Enemy
   - Item
+  - Container
   layers:
   - Default
   - TransparentFX
@@ -16,9 +17,9 @@ TagManager:
   - UI
   - Interactable
   - Ground
-  - 
-  - 
-  - 
+  - World
+  - PlayerLight
+  - Enemy
   - 
   - 
   - 
@@ -47,17 +48,23 @@ TagManager:
   - name: Walls
     uniqueID: 1644163249
     locked: 0
+  - name: Interactable
+    uniqueID: 3210958811
+    locked: 0
   - name: Player
     uniqueID: 2337540531
-    locked: 0
-  - name: Default
-    uniqueID: 0
     locked: 0
   - name: UI
     uniqueID: 3613441403
     locked: 0
-  - name: Interactable
-    uniqueID: 3210958811
+  - name: Default
+    uniqueID: 0
+    locked: 0
+  - name: World
+    uniqueID: 2254552225
+    locked: 0
+  - name: PlayerLight
+    uniqueID: 1965379181
     locked: 0
   m_RenderingLayers:
   - Default
