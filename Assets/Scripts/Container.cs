@@ -1,14 +1,17 @@
+using Unity.Multiplayer.PlayMode;
 using UnityEngine;
 
 public class Container : BaseCase
 {
-   
+    [SerializeField] private PlayerInventory playerInventory;
+    private bool isPlayerNearby = false;
     public void Start()
     {
+        
         if (item.Count == 0)
         {
             AddGraphics();
-            AddTestItems();
+            //AddTestItems();
         }
        
 
@@ -24,9 +27,11 @@ public class Container : BaseCase
         */
         HandleDragUpdate();
 
-        if (Input.GetKeyDown(KeyCode.I))
+        if (Input.GetKeyDown(KeyCode.E) && isPlayerNearby)
         {
-            backGround.SetActive(!backGround.activeSelf);
+            if (!backGround.activeSelf || !playerInventory.backGround.activeSelf) Open();
+            else Close();
+
             if (backGround.activeSelf)
             {
                 CaseUpdate();
@@ -39,10 +44,35 @@ public class Container : BaseCase
             CaseUpdate();
             caseUpdate = false;
         }
-
-
+    }
+    private void OnTriggerEnter2D(Collider2D other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("PlayerInteraction"))
+        {
+            isPlayerNearby = true;
+        }
     }
 
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("PlayerInteraction"))
+        {
+            isPlayerNearby = false;
+            Close();
+        }
+    }
+
+    private void Open()
+    {
+        backGround.SetActive(true);
+        playerInventory.backGround.SetActive(true);
+    }
+    private void Close()
+    {
+        backGround.SetActive(false);
+        playerInventory.backGround.SetActive(false);
+    }
+    /*
     public void AddTestItems()
     {
         for (int i = 0; i < maxCount; i++)
@@ -89,4 +119,5 @@ public class Container : BaseCase
 
         return false;
     }
+    */
 }

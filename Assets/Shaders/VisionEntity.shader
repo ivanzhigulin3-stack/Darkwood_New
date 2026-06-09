@@ -101,26 +101,23 @@
 
             half4 frag(Varyings IN) : SV_Target
             {
-                half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv);
+                // 1. Получаем базовый цвет спрайта
+                half4 color = SAMPLE_TEXTURE2D(_MainTex, sampler_MainTex, IN.uv) * IN.color;
                 
                 bool isVisible = false;
-                
-                // Проверка: попадает ли объект в ближний свет (круг)
                 if (_CloseLightIntensity > 0 && IsInCircle(IN.worldPos, _CloseLightPosition, _CloseLightRadius))
                 {
                     isVisible = true;
                 }
-                
-                // Проверка: попадает ли объект в конус света
                 if (_ConeLightIntensity > 0 && IsInCone(IN.worldPos, _ConeLightPosition, _ConeLightDirection, _ConeLightLength, _ConeLightAngle))
                 {
                     isVisible = true;
                 }
-                
-                // Применяем видимость
-                float alpha = isVisible ? 1.0 : 0.0;
-                color.a = color.a * alpha * IN.color.a;
-                
+                if (!isVisible)
+                {
+                    discard; // Быстрое отсечение пикселя, объект исчезает
+                }
+               
                 return color;
             }
             ENDHLSL

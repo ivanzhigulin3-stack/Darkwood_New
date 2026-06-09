@@ -15,14 +15,14 @@ TagManager:
   - Walls
   - Water
   - UI
-  - Interactable
+  - PlayerInteraction
   - Ground
   - World
-  - PlayerLight
+  - Player
   - Enemy
-  - 
-  - 
-  - 
+  - MovingItem
+  - Container
+  - Invincible
   - 
   - 
   - 
@@ -54,6 +54,9 @@ TagManager:
   - name: Player
     uniqueID: 2337540531
     locked: 0
+  - name: Enemy
+    uniqueID: 1747014299
+    locked: 0
   - name: UI
     uniqueID: 3613441403
     locked: 0
@@ -65,6 +68,9 @@ TagManager:
     locked: 0
   - name: PlayerLight
     uniqueID: 1965379181
+    locked: 0
+  - name: MovingItem
+    uniqueID: 338430131
     locked: 0
   m_RenderingLayers:
   - Default

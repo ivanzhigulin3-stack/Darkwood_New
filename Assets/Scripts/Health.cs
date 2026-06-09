@@ -1,56 +1,65 @@
 using UnityEngine;
-using UnityEngine.Events; 
+using System;
 
-public class Health : MonoBehaviour
+public abstract class Health : MonoBehaviour
 {
-    [Header("Параметры")]
-    public int maxHealth = 100;
-    private int currentHealth;
+    [Header("Health Settings")]
+    [SerializeField] protected int maxHealth = 100;
+    [SerializeField] protected int currentHealth;
 
-    [Header("События (UI, анимация, звук)")]
-    public UnityEvent OnTakeDamage;   
-    public UnityEvent OnDie;           
-    public UnityEvent OnHeal;          
+    // События, на которые могут подписываться другие скрипты (например, UI полоски здоровья)
+    public event Action<int, int> OnHealthChanged; // Передает (currentHealth, maxHealth)
+    public event Action OnDeath;
 
-    void Start()
+    protected virtual void Awake()
     {
         currentHealth = maxHealth;
     }
 
-    public void TakeDamage(int amount)
+    protected virtual void Start()
     {
-        if (currentHealth <= 0) return; 
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
 
-        currentHealth -= amount;
-        OnTakeDamage?.Invoke(); 
+    public virtual void TakeDamage(int damage)
+    {
+        if (currentHealth <= 0) return;
+
+        currentHealth -= damage;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+
+        Debug.Log($"{gameObject.name} получил {damage} урона. Осталось ОЗ: {currentHealth}");
 
         if (currentHealth <= 0)
         {
-            currentHealth = 0;
             Die();
         }
-
-        Debug.Log($"{gameObject.name} Health: {currentHealth}/{maxHealth}");
     }
 
-    public void Heal(int amount)
+    public virtual void Heal(int amount)
     {
-        currentHealth = Mathf.Min(currentHealth + amount, maxHealth);
-        OnHeal?.Invoke();
+        if (currentHealth <= 0) return; 
+
+        currentHealth += amount;
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
     }
 
-    private void Die()
+    protected virtual void Die()
     {
-        Debug.Log($"{gameObject.name} умер.");
-        OnDie?.Invoke();
-
-        if (gameObject.CompareTag("Player"))
-        {
-            // Здесь будет логика смерти игрока
-        }
-        else
-        {
-            Destroy(gameObject, 1f); 
-        }
+        OnDeath?.Invoke();
+        Debug.Log($"{gameObject.name} умер!");
     }
+
+    public virtual void ResetHealthAfterRespawn()
+    {
+        currentHealth = maxHealth;
+        OnHealthChanged?.Invoke(currentHealth, maxHealth);
+    }
+
+    public int GetCurrentHealth() => currentHealth;
+    public int GetMaxHealth() => maxHealth;
 }

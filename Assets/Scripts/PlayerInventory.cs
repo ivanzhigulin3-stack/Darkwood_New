@@ -50,8 +50,8 @@ public class PlayerInventory : BaseCase
         {
             AddItem(i, data.item[0], 0);
         }
-        AddItemByID(1, 5);
-        AddItemByID(2, 10);
+        AddItemByID(1, 1);
+        AddItemByID(2, 2);
         AddItemByID(3, 30);
     }
 

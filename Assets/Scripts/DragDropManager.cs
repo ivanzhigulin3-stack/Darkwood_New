@@ -29,7 +29,6 @@ public class DragDropManager : MonoBehaviour
         dragVisual.SetActive(true);
         dragVisual.GetComponent<UnityEngine.UI.Image>().sprite = inventory.data.item[item.id].image;
 
-        // Очищаем исходный слот
         inventory.AddItem(slotID, inventory.data.item[0], 0);
     }
 
@@ -40,13 +39,11 @@ public class DragDropManager : MonoBehaviour
 
         CaseItem targetItem = targetInventory.item[targetSlotID];
 
-        // Если в целевом слоте пусто
         if (targetItem.id == 0)
         {
             targetInventory.AddCaseItem(targetSlotID, draggedItem);
             EndDrag();
         }
-        // Если предметы одинаковые и можно стакать
         else if (targetItem.id == draggedItem.id)
         {
             ItemData itemData = sourceInventory.data.item[draggedItem.id];
@@ -69,22 +66,22 @@ public class DragDropManager : MonoBehaviour
                 EndDrag();
             }
         }
-        // Разные предметы - меняем местами
         else
         {
-            // Сохраняем целевой предмет
             CaseItem tempItem = targetInventory.CopyCaseItem(targetItem);
-
-            // Очищаем целевой слот
             targetInventory.AddItem(targetSlotID, targetInventory.data.item[0], 0);
-
-            // Вставляем перетаскиваемый предмет в целевой слот
             targetInventory.AddCaseItem(targetSlotID, draggedItem);
-
-            // Вставляем сохраненный предмет в исходный слот
             sourceInventory.AddCaseItem(sourceSlotID, tempItem);
-
             EndDrag();
+        }
+
+        if (targetInventory is TradeContainer tradeTarget)
+        {
+            tradeTarget.RecalculateBasketValue();
+        }
+        if (sourceInventory is TradeContainer tradeSource)
+        {
+            tradeSource.RecalculateBasketValue();
         }
     }
 

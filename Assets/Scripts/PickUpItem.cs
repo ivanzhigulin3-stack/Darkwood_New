@@ -13,7 +13,7 @@ public class PickUpItem : MonoBehaviour
     private GameObject currentPlayer;
 
     private Vector3 startPosition;
-    private float floatTimer = 0f;
+    //private float floatTimer = 0f;
 
     private GameObject pickupHint;
 
